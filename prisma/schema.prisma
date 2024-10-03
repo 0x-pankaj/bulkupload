@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id            String  @id
+  category_name String  @db.VarChar(200)
+  icon_name     String?
+  act           Act[]
+
+  @@map("Category")
+}
+
+model Act {
+  id          String       @id
+  act_name    String?      @db.VarChar(500)
+  act_year_ad Int?
+  act_year_bs Int?
+  act_number  String?      @db.VarChar(200)
+  act_date    String?      @db.VarChar(50)
+  act_desc    String?
+  is_active   Boolean      @default(true)
+  category_id String
+  category    Category     @relation(fields: [category_id], references: [id])
+  amendment   Amendment[]
+  most_viewed Most_Viewed?
+
+  @@map("Act")
+}
+
+model Amendment {
+  id                String      @id
+  act_id            String
+  amendment_head    String?     @db.VarChar(200)
+  amendment_num     Int?        @default(0)
+  amendment_year_bs Int?        @default(0)
+  amendment_date    String?     @db.VarChar(50)
+  content           String?
+  act               Act         @relation(fields: [act_id], references: [id], onDelete: Cascade)
+  chapters          Chapter[]
+  definition        Definition?
+  preambles         Preamble?
+  section           Section[]
+
+  @@map("Amendment")
+}
+
+model Preamble {
+  id            String    @id
+  amend_id      String    @unique
+  preamble_desc String?
+  amend         Amendment @relation(fields: [amend_id], references: [id], onDelete: Cascade)
+
+  @@map("Preamble")
+}
+
+model Chapter {
+  id           String    @id
+  amend_id     String
+  chapter_no   String?   @db.VarChar(100)
+  chapter_head String?   @db.VarChar(500)
+  amend        Amendment @relation(fields: [amend_id], references: [id], onDelete: Cascade)
+  clause       Clause[]
+  sections     Section[]
+
+  @@map("Chapter")
+}
+
+model Section {
+  id           String       @id
+  amend_id     String
+  section_no   String?      @db.VarChar(100)
+  section_head String?      @db.VarChar(1000)
+  section_desc String?
+  chapter_id   String?
+  clauses      Clause[]
+  amend        Amendment    @relation(fields: [amend_id], references: [id], onDelete: Cascade)
+  chapter      Chapter?     @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+  subsections  Subsection[]
+
+  @@map("Section")
+}
+
+model Subsection {
+  id              String   @id
+  section_id      String?
+  subsection_no   String?  @db.VarChar(25)
+  subsection_desc String?
+  clauses         Clause[]
+  section         Section? @relation(fields: [section_id], references: [id], onDelete: Cascade)
+
+  @@map("Subsection")
+}
+
+model Clause {
+  id            String        @id @unique
+  chapter_id    String?
+  section_id    String?
+  subsection_id String?
+  chapter       Chapter?      @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+  section       Section?      @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  subsection    Subsection?   @relation(fields: [subsection_id], references: [id], onDelete: Cascade)
+  clause_list   Clause_list[]
+
+  @@map("Clause")
+}
+
+model Clause_list {
+  id          String  @id @unique
+  clause_id   String?
+  clause_no   String  @db.VarChar(100)
+  clause_desc String
+  clause      Clause? @relation(fields: [clause_id], references: [id], onDelete: Cascade)
+}
+
+model Definition {
+  id              String            @id
+  amend_id        String            @unique
+  definition_desc String?
+  amend           Amendment         @relation(fields: [amend_id], references: [id], onDelete: Cascade)
+  definition_list Definition_list[]
+
+  @@map("Definition")
+}
+
+model Definition_list {
+  id                      String     @id
+  definiton_id            String
+  definition_glossary_key String?
+  definition_no           String?    @db.VarChar(100)
+  definition_no_desc      String?
+  definition              Definition @relation(fields: [definiton_id], references: [id], onDelete: Cascade)
+}
+
+model Most_Viewed {
+  id     String @id @default(cuid())
+  act_id String @unique
+  count  Int
+  act    Act    @relation(fields: [act_id], references: [id], onDelete: Cascade)
+}
+
+model Notice {
+  id            String    @id @default(cuid())
+  title         String
+  shortContent  String?
+  date          DateTime?
+  attachmentUrl String?
+  createdAt     DateTime  @default(now())
+  hits          Int       @default(0)
+}
